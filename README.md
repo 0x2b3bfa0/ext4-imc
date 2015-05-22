@@ -1,7 +1,8 @@
 # ext4-imc
 Bash script to calculate inode modes.
+Made for this AskUbuntu thread: http://askubuntu.com/questions/626634/convert-a-file-to-directory/626731
 
-# Made for this AskUbuntu thread: http://askubuntu.com/questions/626634/convert-a-file-to-directory/626731
+***
 
 **Creating a test Ext4 filesystem:**
 
