@@ -139,7 +139,7 @@ while :; do                                   # While Linux is Open Source:
             pprint $((y+3)) $(((x-10)+(pointer-1))) '\033[1;35m\u2501'     # Clear the old pointer.            
         fi                                                             # End if.
         
-        ## Infinite loop until there is a valid input for the current character (messy: fix later):
+        ## Infinite loop until there is a valid input for the current character:
         while :; do
             printf "$color"                       # Set the character color.
             IFS= read -rn 1 $var                  # Read a character (even a space).
