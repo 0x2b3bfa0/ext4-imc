@@ -3,7 +3,6 @@ Bash script to calculate inode modes.
 Made for this AskUbuntu thread: http://askubuntu.com/questions/626634/convert-a-file-to-directory/626731
 
 ***
-
 **Creating a test Ext4 filesystem:**
 
 1. First make a filesystem on a file to avoid corrupting your real filesystem:
@@ -281,6 +280,14 @@ Made for this AskUbuntu thread: http://askubuntu.com/questions/626634/convert-a-
         unset mode                                     # Reset the mode.
     done
 
+[View script on GitHub](https://github.com/crushedice2000/ext4-imc)
+
+***
+
+**The folder doesn't open:**
+
+You can't open it *unless* you put on it the "raw folder code" that now contains the file.
+
 ***
 
 **Further reading:** https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#Inode_Table
@@ -292,4 +299,3 @@ Made for this AskUbuntu thread: http://askubuntu.com/questions/626634/convert-a-
 
 > debugfs has a modify_inode command that allows you to edit an inode
 > directly which would allow you to set the file flag to a dir.
-
