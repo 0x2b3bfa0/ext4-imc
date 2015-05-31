@@ -158,7 +158,7 @@ while :; do                                   # While Linux is Open Source:
         done
 
         ## Print the entered value:
-        pprint $((y+2)) $(((x-10)+pointer)) "${!var}" # Print the current character.
+        pprint $((y+2)) $(((x-10)+pointer)) "${!var}"
         
         ## Sum the current permission:
         ((mode+=permission[${var%_*}_${!var}]))
