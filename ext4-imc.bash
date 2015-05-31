@@ -7,172 +7,176 @@ x="$(( $(tput cols) / 2 ))"   # Width of the terminal.
 y="$(( $(tput lines) /  2 ))" # Height of the terminal.
 
 ## File descriptors:
-declare -A types     # Declare an associative array with file descriptors.
-types[f]="0x8000"    # File
-types[l]="0xA000"    # Link
-types[s]="0xC000"    # Socket
-types[d]="0x4000"    # Directory
-types[p]="0x1000"    # Named pipe
-types[b]="0x6000"    # Block device
-types[c]="0x2000"    # Character device
+declare -A types       # Declare an associative array with file descriptors.
+types[f]='0x8000'      # File
+types[l]='0xA000'      # Link
+types[s]='0xC000'      # Socket
+types[d]='0x4000'      # Directory
+types[p]='0x1000'      # Named pipe
+types[b]='0x6000'      # Block device
+types[c]='0x2000'      # Character device
+
+## Permissions:
+declare -A permission  # Declare an associative array with prmissions.
+permission[user_S]='0x800'  # UID.
+permission[user_s]='0x840'  # UID and user can execute.
+permission[user_r]='0x100'  # User can read.
+permission[user_w]='0x80'   # User can write.
+permission[user_x]='0x40'   # User can execute.
+permission[group_S]='0x400' # GID.
+permission[group_s]='0x408' # GID and group can execute.
+permission[group_r]='0x20'  # Group can read.
+permission[group_w]='0x10'  # Group can write.
+permission[group_x]='0x8'   # Group can execute.
+permission[other_T]='0x200' # Sticky bit.
+permission[other_t]='0x201' # Sticky bit and other can execute.
+permission[other_r]='0x4'   # Other can read.
+permission[other_w]='0x2'   # Other can write.
+permission[other_x]='0x1'   # Other can execute.
 
 ## Cleanup function:
 function cleanup() {
-    tput cvvis        # Make the cursor vsible
+    tput cvvis        # Make the cursor visible
     tput rmcup        # Restore saved terminal contents.
     stty sane         # Fix problems caused by read -s
     exit 0            # Exit gracefully.
 }
 
+## Function to print at a specified position:
+function pprint() {
+    tput cup $1 $2
+    printf "${@:3}"
+}
+
 ## Function to clear the notification area:
 function reset() {
-    tput cup $((y-3)) $((x-40))  # Put the cursor at the begin.
-    printf "% *s\n" 30           # Print 30 spaces.
+    pprint $((y+2)) $((x-40)) ' %.0s' {1..25} # Print 25 spaces.
 }
 
-## Function to notify a error to the user:
-function error() {
-    reset                                            # Clear the notification area.
-    [[ "$1" == "type"    ]] && color="\033[1;37m"    # If $1 is "type", white.
-    [[ "$1" =~ ^user_.$  ]] && color="\033[1;32m"    # If $1 is "user_*", green.
-    [[ "$1" =~ ^group_.$ ]] && color="\033[1;33m"    # If $1 is "group_*", orange.
-    [[ "$1" =~ ^other_.$ ]] && color="\033[1;31m"    # If $1 is "other_*", red.
-    tput cup $((y-3)) $((x-40))                      # Put the cursor at the begin.
-    printf "\033[0;31mWrong input on ${color}$1\033[0;31m field!" # Print the error.
+## Function to notify something to the user:
+function notify() {
+    reset                          # Clear the notification area.
+    pprint $((y+2)) $((x-40)) "$@" # Print the text.
 }
 
-## Function to print the result:
-function result() {
-    reset                                            # Clear the notification area.
-    tput cup $((y-3)) $((x-40))                      # Put the cursor at the begin.
-    printf "\033[1;32mOctal mode:\033[1;34m $@"      # Print the result.
-}
-
-## If the terminal is smaller than 96x16, exit gracefully (self-explainatory).
-if [ $x -lt 48 ] || [ $y -lt 8 ]; then
-    echo "Error, I need a minimum of 96x16 lines to run"
+## If the terminal is smaller than 100x8, exit gracefully (self-explainatory).
+if [ $x -lt 50 ] || [ $y -lt 5 ]; then
+    echo 'Error, I need a minimum of 100x10 lines to run'
     exit 0
 fi
 
-## Manage terminal:
+## Initialize the terminal:
 trap cleanup EXIT SIGHUP SIGINT SIGTERM # Call cleanup function when ^C
+stty -echo  cbreak                      # Put terminal in silent mode.
 tput smcup                              # Save terminal contents.
-tput civis                              # Make the cursor misible.
+tput civis                              # Make the cursor inisible.
+
+## Draw the big box:
+printf '\033[1;37m'                            # Color.
+pprint $((y-3)) $((x-48)) '\u2500%.0s' {1..97} # Upper line.
+pprint $((y+4)) $((x-48)) '\u2500%.0s' {1..97} # Lower line.
+for ((i=4;i>-4;i--)); do                       # Sides:
+    pprint $((y+i)) $((x-49)) '\u2502'             # Left line.
+    pprint $((y+i)) $((x+49)) '\u2502'             # Right line.
+done                                           # End sides.
+pprint $((y-3)) $((x-49)) '\u256D'             # Upper-left corner.
+pprint $((y+4)) $((x-49)) '\u2570'             # Lower-left corner.
+pprint $((y-3)) $((x+49)) '\u256E'             # Upper-right corner.
+pprint $((y+4)) $((x+49)) '\u256F'             # Lower-right corner.
+
+## Draw the small box:
+printf '\033[1;35m'                             # Color.
+pprint $((y+1)) $((x-10)) '\u2501%.0s' {1..10}  # Upper line.
+pprint $((y+3)) $((x-10)) '\u2501%.0s' {1..10}  # Lower line.
+pprint $((y+2)) $((x-11)) '\u2503'              # Left line.
+pprint $((y+2)) $((x+00)) '\u2503'              # Right line.
+pprint $((y+1)) $((x-11)) '\u250F'              # Upper-left corner.
+pprint $((y+3)) $((x-11)) '\u2517'              # Lower-left corner.
+pprint $((y+1)) $((x+00)) '\u2513'              # Upper-right corner.
+pprint $((y+3)) $((x+00)) '\u251B'              # Lower-right corner.
 
 ## Print type help:
-tput cup $((y-6)) $((x-48)) # Put the cursor at the begin of the first line of the help.
-printf "\033[1;37m#\033[0;37m is the inode type: \033[1;37mf\033[0;37mile, \033[1;37md\033[0;37mirectory, \033[1;37ml\033[0;37mink, named \033[1;37mp\033[0;37mipe, \033[1;37ms\033[0;37mocket, \033[1;37mc\033[0;37mharacter device or \033[1;37mb\033[0;37mlock device."
+pprint $((y-2)) $((x-44)) '\033[0;37mInode type: \033[1;37mf\033[0;37mile, \033[1;37md\033[0;37mirectory, \033[1;37ml\033[0;37mink, named \033[1;37mp\033[0;37mipe, \033[1;37ms\033[0;37mocket, \033[1;37mc\033[0;37mharacter device or \033[1;37mb\033[0;37mlock device.'
 
 ## Print permission help:
-tput cup $((y-5)) $((x-48)) # Put the cursor at the begin of the second line of the help.
-printf "\033[1;37m###\033[0;37m is the permission (\033[1;32mu\033[0;37mser, \033[1;33mg\033[0;37mroup or \033[1;31mo\033[0;37mther): \033[1;36mr\033[0;37mead, \033[1;36mw\033[0;37mrite, e\033[1;36mx\033[0;37mecute, \033[1;36mhyphen\033[0;37m or \033[1;36mspace\033[0;37m to skip."
-tput cup $((y-4)) $((x+11)) # Put the cursor at the begin of the third line of the help.
-printf "s\033[1;36mt\033[0;37micky bit and executable, "
-tput cup $((y-3)) $((x+11)) # Put the cursor at the begin of the fourth line of the help.
-printf "s\033[1;36mT\033[0;37micky bit not executable, "
-tput cup $((y-2)) $((x+11)) # Put the cursor at the begin of the fifth line of the help.
-printf "\033[1;36ms\033[0;37metuid/setgid and executable, "
-tput cup $((y-1)) $((x+11)) # Put the cursor at the begin of the sixth line of the help.
-printf "\033[1;36mS\033[0;37metuid/setgid not executable. "
-
-## Print equal signs below the text
-tput cup $((y-2)) $((x-5)) # Put the cursor in the line inmediately at the bottom of input.
-printf "\033[1;37m=\033[1;32m===\033[1;33m===\033[1;31m==="
+pprint $((y-1)) $((x-40)) '\033[0;36mPermission (\033[1;32mu\033[0;32mser\033[0;36m, \033[1;33mg\033[0;33mroup\033[0;36m or \033[1;31mo\033[0;31mther\033[0;36m): \033[1;36mr\033[0;36mead, \033[1;36mw\033[0;36mrite, e\033[1;36mx\033[0;36mecute, \033[1;36mhyphen\033[0;36m or \033[1;36mspace\033[0;36m to skip.'
+pprint $((y+0)) $((x+8)) 's\033[1;36mt\033[0;36micky bit and executable, '
+pprint $((y+1)) $((x+8)) 's\033[1;36mT\033[0;36micky bit not executable, '
+pprint $((y+2)) $((x+8)) '\033[1;36ms\033[0;36metuid/setgid and executable, '
+pprint $((y+3)) $((x+8)) '\033[1;36mS\033[0;36metuid/setgid not executable. '
 
 ## Endless loop:
-while :; do
+while :; do                                   # While Linux is Open Source:
 
     ## Clear the input area:
-    tput cup $((y-3)) $((x-5))   # Put the cursor at the begin of the input area.
-    printf "% *s\n" 16           # Print 16 spaces.
+    pprint $((y+2)) $((x-10)) '% *s\n' 10         # Print 16 spaces.
 
-    ## Print hash signs in the input area:
-    tput cup $((y-3)) $((x-5))             # Put the cursor at the begin of the input area.
-    printf "\033[1;37m#"                   # Print a white hash for the type.
-    printf "\033[1;36m#########"           # Print 9 turquoise hashes for the permission.
+    ## Print mask in the input area:
+    printf '\033[1;37m'                           # Color for the type.
+    pprint $((y+2)) $((x-10)) '\u2588'            # Block for the type.
+    printf '\033[1;36m'                           # Color for the permision.
+    pprint $((y+2)) $((x- 9)) '\u2588%.0s' {1..9} # Blocks for the permission.
 
     ## Loop through all variables to make a proper input:
-    for var in \
-               type                    \
-               user_r  user_w  user_x  \
-               group_r group_w group_x \
-               other_r other_w other_x
-    do
+    for var in type {user,group,other}_{r,w,x}; do
     
-        ## Assign colors to fields:
-        [[ "$var" == "type"    ]] && color="\033[1;37m"    # If $1 is "type", white.
-        [[ "$var" =~ ^user_.$  ]] && color="\033[1;32m"    # If $1 is "user_*", green.
-        [[ "$var" =~ ^group_.$ ]] && color="\033[1;33m"    # If $1 is "group_*", orange.
-        [[ "$var" =~ ^other_.$ ]] && color="\033[1;31m"    # If $1 is "other_*", red.
-
-        ## Messy section (if it ain't broke, don't fix it):
-        if [[ "$var" =~ ^(user|group|other)_[rw]$ ]]; then
-            regex='^[-[:space:]'"${var: -1}"']$'
-        elif [[ "$var" =~ ^(user|group|other)_x$ ]]; then
-            if [[ "$var" =~ ^(user|group)_x$ ]]; then
-                regex='^[-[:space:]xsS]$'
-            else
-                regex='^[-[:space:]xtT]$'
-            fi
-        else
-            regex='^[-fdlpscb]$'
-        fi
+        ## Assign colors and regex to fields:
+        case "$var" in
+            (type)    color='\033[1;37m';     regex='^[fdlpscb]$'    ;;
+            
+            (other_x)                         regex='^[-xtT]$'       ;;&
+            (user_x|group_x)                  regex='^[-xsS]$'       ;;&
+            (user_[rw]|group_[rw]|other_[rw]) regex="^[-${var: -1}]$";;&
+            
+            (user*)   color='\033[1;32m'                             ;;
+            (group*)  color='\033[1;33m'                             ;;
+            (other*)  color='\033[1;31m'                             ;;
+        esac
 
         ## Change the pointer position:
-        tput cup $((y-4)) $(((x-5)+counter))     # Put the cursor on the new pointer position.
-        printf "${color}_"                       # Print the pointer on it's new position.
-        tput cup $((y-4)) $(((x-5)+(counter-1))) # Put the cursor on the old pointer position.
-        printf " "                               # Remove the old pointer.
-
-        ## Infinite loop until there is a valid input for the current character:
+        pprint $((y+3)) $(((x-10)+pointer)) "${color}\u2501"           # Print the pointer on it's new position.
+        if (( pointer > 0 )); then                                     # If the pointer is not in the first position:
+            pprint $((y+3)) $(((x-10)+(pointer-1))) '\033[1;35m\u2501'     # Clear the old pointer.            
+        fi                                                             # End if.
+        
+        ## Infinite loop until there is a valid input for the current character (messy: fix later):
         while :; do
-            tput cup $((y-3)) $(((x-5)+counter))  # Put the cursor on current character. (not needed, read doesn't show nothing)
-            printf "$color"; read -sn 1 $var      # Read a character in silent mode.
+            printf "$color"                       # Set the character color.
+            IFS= read -rn 1 $var                  # Read a character (even a space).
+       
+            declare $var="${!var// /-}"           # Convert spaces to hyphens.
+            if [[ "$var" == "type" ]]; then       # If the current variable is type:
+                declare $var="${!var//-/f}"           # Convert hyphen to f.
+            fi                                    # End if.
+            
             if [[ "${!var}"  =~ $regex ]]; then   # If there is a valid input:
                 reset                                 # Clear error notification if any.
                 break                                 # Exit from this loop.
             else                                  # Else:
-                [[ "$var" == "type" ]] && error type ||  error ${var::-2} # Dirty fix, fix later.
+                notify "\033[1;31mWrong input!"       # Print the error message.
             fi
         done
 
-        ## Print the entered value (as read silent mode does not echo it)
-        tput cup $((y-3)) $(((x-5)+counter)) # Put the cursor on current character.
-        printf "${!var}"                     # Print the current character.
+        ## Print the entered value:
+        pprint $((y+2)) $(((x-10)+pointer)) "${!var}" # Print the current character.
         
-        ## Increment the counter:
-        ((counter++))
+        ## Sum the current permission:
+        ((mode+=permission[${var%_*}_${!var}]))
+        
+        ## Increment the pointer:
+        ((pointer++))
     done
 
     ## Post-read:
-    counter=0                   # Reset the counter.
-    read -n 1                   # Wait for Return or another character.
-    tput cup $((y-4)) $((x+4))  # Put the cursor on the pointer position.
-    printf " "                  # Clear the pointer.
-
-    [[ "$user_x" == "S" ]] && ((mode+=0x800))
-    [[ "$user_x" == "s" ]] && ((mode+=0x840))
-    [[ "$user_r" == "r" ]] && ((mode+=0x100))
-    [[ "$user_w" == "w" ]] && ((mode+=0x80))
-    [[ "$user_x" == "x" ]] && ((mode+=0x40))
-
-    [[ "$group_x" == "S" ]] && ((mode+=0x400))
-    [[ "$group_x" == "s" ]] && ((mode+=0x408))
-    [[ "$group_r" == "r" ]] && ((mode+=0x20))
-    [[ "$group_w" == "w" ]] && ((mode+=0x10))
-    [[ "$group_x" == "x" ]] && ((mode+=0x8))
-
-    [[ "$other_x" == "T" ]] && ((mode+=0x200))
-    [[ "$other_x" == "t" ]] && ((mode+=0x201))
-    [[ "$other_r" == "r" ]] && ((mode+=0x4))
-    [[ "$other_w" == "w" ]] && ((mode+=0x2))
-    [[ "$other_x" == "x" ]] && ((mode+=0x1))
-
+    unset pointer                                 # Reset the pointer.
+    pprint $((y+3)) $((x-1)) "\033[1;35m\u2501"   # Clear the pointer.
+    read -n 1                                     # Wait for Return or another character.
     
+    ## Sum file descriptor type:
     ((mode+=${types[$type]}))
     
     ## Final commands:
-    mode=$(printf "%o" $mode)  # Convert mode to octal (before this is decimal).
-    result $mode               # Print the octal mode.
-    mode=0                     # Reset the mode.
+    mode=$(printf "%o" $mode)                      # Convert mode to octal (before this is decimal).
+    notify "\033[1;32mOctal mode:\033[1;34m $mode" # Print the octal mode.
+    unset mode                                     # Reset the mode.
 done
