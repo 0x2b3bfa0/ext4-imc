@@ -1,33 +1,33 @@
 # ext4-imc
-Bash script to calculate inode modes.
-Made for this AskUbuntu thread: http://askubuntu.com/questions/626634/convert-a-file-to-directory/626731
+Bash script to calculate inode modes for the Ext4 filesystem. Originally made for [AskUbuntu](https://askubuntu.com/questions/626634/convert-a-file-to-directory/626731)
 
 ***
-**Creating a test Ext4 filesystem:**
+# Achieving the conversion
 
-1. First make a filesystem on a file to avoid corrupting your real filesystem:
+### Creating a test filesystem
+In order to preserve our main filesystem from any possible damage after running this experiment, we're going to create a small filesystem inside a normal file for test purposes.
 
-        dd if=/dev/zero of=test_fs bs=10M count=1
-   This will create a file called `test_fs` with a size of 10 megabytes.
+1. Create a zero-filled file called `test` with a size of 10 megabytes:
 
-2. Then we will create a Ext4 filesystem on it:
+        dd if=/dev/zero of=~/test bs=10M count=1
 
-        mkfs.ext4 test_fs
+2. Create an Ext4 filesystem inside the file, as if it were a partition:
 
-***
+        mkfs.ext4 ~/test
 
-**Putting some files on it:**
+### Creating some files and directories
+Now we hace a fully functional filesystem inside the `test` file, so we're going to create some files and directories inside it.
 
-1. We have a fully functional filesystem. Let's mount it:
+1. Mount the newly created filesystem inside `/mnt`:
 
-        sudo mount test_fs /mnt
+        sudo mount ~/test /mnt
 
-2. Let's make a folder and a file.
+2. Create a file and a directory:
 
         sudo mkdir /mnt/folder
-        echo "Foo" | sudo tee /mnt/file
+        echo "contents" | sudo tee /mnt/file
 
-3. Now test that all goes well:
+3. Check the contents of the filesystem:
 
         ls -l /mnt
 
@@ -37,17 +37,15 @@ Made for this AskUbuntu thread: http://askubuntu.com/questions/626634/convert-a-
         -rw-r--r-- 1 root root     0 may 21 18:53 file
         drw-r--r-- 2 root root  1024 may 21 18:55 folder
 
-4. Then we will umount the filesystem:
+4. Unmount the test filesystem:
 
         sudo umount /mnt
 
-***
+### Swapping the file and the folder
 
-**Swapping the file and the folder:**
+1. Run `debugfs` against the `test` file with write permission (`-w` flag):
 
-1. Run `debugfs` against `test_fs` with write permission (`-w` flag):
-
-        debugfs -w test_fs
+        debugfs -w ~/test
 
 2. Convert `file` into a folder:
 
@@ -55,11 +53,11 @@ Made for this AskUbuntu thread: http://askubuntu.com/questions/626634/convert-a-
 
             modify_inode file
 
-   * A prompt will appear asking you a mode. Type this:
+   * A prompt will appear asking you a mode; type this:
   
             040644
 
-   * Keep pressing <kbd>Return</kbd> to leave the resting data as-is until appears the prompt.
+   * Keep pressing **<kbd>return</kbd>** to leave the remaining data as-is until the prompt appears again.
 
 3. Convert `folder` into a file:
 
@@ -67,35 +65,33 @@ Made for this AskUbuntu thread: http://askubuntu.com/questions/626634/convert-a-
 
             modify_inode folder
 
-   * A prompt will appear asking you a mode. Type this:
+   * A prompt will appear asking you a mode; type this:
   
             0100644
 
-   * Keep pressing <kbd>Return</kbd> to leave the resting data as-is until appears the prompt.
+   * Keep pressing **<kbd>return</kbd>** to leave the remaining data as-is until the prompt appears again.
 
-4. To exit `debugfs` prompt, simply hit **<kbd>q</kbd>** and then <kbd>Return</kbd>
+4. To exit `debugfs` prompt, simply hit **<kbd>q</kbd>** and then **<kbd>return</kbd>**
 
-***
+### Checking the success of the operation
 
-**Checking that all goes well:**
+1. Mount the test filesystem again:
 
-1. Let's mount the test filesystem again:
+        sudo mount ~/test /mnt
 
-        sudo mount test_fs /mnt
-
-2. Now check the filesystem contents:
+2. Check the filesystem contents:
 
         ls -l /mnt
 
-       Hooray! It works! See here:
+       Now, it should show the file as if it were a directory and *vice versa*:
 
         total 2
         drw-r--r-- 1 root root     0 may 21 18:53 file
         -rw-r--r-- 2 root root  1024 may 21 18:55 folder
 
-***
+---
 
-**Script to calculate inode modes:**
+# Script to calculate inode modes
 
     #!/bin/bash
     
@@ -280,21 +276,18 @@ Made for this AskUbuntu thread: http://askubuntu.com/questions/626634/convert-a-
         unset mode                                     # Reset the mode.
     done
 
-[View script on GitHub](https://github.com/crushedice2000/ext4-imc)
+[View script on GitHub](https://github.com/0x2b3bfa0/ext4-imc)
+
+# Handicaps
+
+* The folder doesn't open. You can't open it *unless* you put on it the "raw folder data" that contained it originally.
+
+# Further reading
+https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#Inode_Table
 
 ***
 
-**The folder doesn't open:**
-
-You can't open it *unless* you put on it the "raw folder code" that now contains the file.
-
-***
-
-**Further reading:** https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#Inode_Table
-
-***
-
-**Thanks to [@tallus](http://askubuntu.com/users/80756/tallus).** He gave me a great hint:
+**Thanks to [@tallus](https://askubuntu.com/users/80756/tallus).** He gave me a great hint:
 	
 
 > debugfs has a modify_inode command that allows you to edit an inode
