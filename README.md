@@ -1,5 +1,5 @@
 # ext4-imc
-Bash script to calculate inode modes for the Ext4 filesystem. Originally made for [AskUbuntu](https://askubuntu.com/questions/626634/convert-a-file-to-directory/626731)
+Bash script to calculate inode modes for the Ext4 filesystem. Originally made for an [AskUbuntu](https://askubuntu.com/questions/626634/convert-a-file-to-directory/626731) answer.
 
 ***
 # Achieving the conversion
