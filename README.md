@@ -1,4 +1,4 @@
-# ext4-imc
+# Ext4 inode mode calculator
 Bash script to calculate inode modes for the Ext4 filesystem. Originally made for an [AskUbuntu](https://askubuntu.com/questions/626634/convert-a-file-to-directory/626731) answer.
 
 ***
